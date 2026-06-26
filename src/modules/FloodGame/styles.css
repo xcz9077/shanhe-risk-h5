@@ -12,20 +12,67 @@
   font-size: 24px;
 }
 
-.round-task {
+.flood-head .kicker {
+  margin-bottom: 4px;
+}
+
+.transfer-tip {
+  margin-bottom: 8px;
+  color: #4b4b42;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.round-intel {
+  display: grid;
+  gap: 5px;
   padding: 9px 11px;
   border-left: 3px solid var(--gold);
   border-radius: 7px;
   background: rgba(255, 247, 232, 0.74);
+}
+
+.round-intel > strong {
   color: #3f4f5f;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.45;
 }
 
+.round-intel p {
+  color: #4b4b42;
+  font-size: 12px;
+  line-height: 1.44;
+}
+
+.round-intel dl {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+
+.round-intel dl div {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 6px;
+}
+
+.round-intel dt {
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.round-intel dd {
+  margin: 0;
+  color: #3f4f5f;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .flood-dashboard {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0;
   overflow: hidden;
   margin-bottom: 8px;
@@ -37,7 +84,7 @@
 
 .flood-dashboard .flood-metric {
   min-width: 0;
-  padding: 8px 5px;
+  padding: 7px 3px;
   border: 0;
   border-right: 1px solid rgba(20, 48, 76, 0.1);
   border-radius: 0;
@@ -53,7 +100,7 @@
   display: block;
   margin-bottom: 4px;
   color: var(--blue-soft);
-  font-size: 10px;
+  font-size: 9px;
   white-space: nowrap;
 }
 
@@ -61,7 +108,7 @@
   display: block;
   overflow-wrap: anywhere;
   color: var(--blue);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.2;
 }
 
@@ -475,6 +522,13 @@
   margin-bottom: 10px;
 }
 
+.flood-event-card small {
+  display: block;
+  color: var(--blue-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .flood-guide-card h3 {
   margin-bottom: 10px;
   color: var(--blue);
@@ -491,6 +545,50 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 14px;
+}
+
+.judgement-review {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.judgement-review h3 {
+  color: var(--blue);
+  font-size: 17px;
+}
+
+.review-item {
+  display: grid;
+  gap: 5px;
+  padding: 10px 11px;
+  border: 1px solid rgba(20, 48, 76, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.86);
+}
+
+.review-item strong {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--blue);
+  font-size: 13px;
+}
+
+.review-item span {
+  flex: 0 0 auto;
+  color: var(--red);
+  font-size: 12px;
+}
+
+.review-item.is-done span {
+  color: #476d5a;
+}
+
+.review-item p {
+  color: #4b4b42;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .flood-score-grid .flood-metric,
@@ -535,6 +633,22 @@
 }
 
 @media (max-width: 390px) {
+  .transfer-tip {
+    font-size: 11px;
+  }
+
+  .round-intel {
+    padding: 8px 9px;
+  }
+
+  .round-intel p {
+    font-size: 11px;
+  }
+
+  .round-intel dd {
+    font-size: 10.5px;
+  }
+
   .flood-map {
     min-height: 438px;
   }

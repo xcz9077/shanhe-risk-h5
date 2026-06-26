@@ -4,8 +4,10 @@ import {
   floodEvents,
   floodGameText,
   initialAreas,
+  judgementReviews,
   resultTypes,
   riskLevels,
+  roundBriefs,
   scoringRules,
   type ActionId,
   type AreaId,
@@ -23,6 +25,9 @@ type GameState = {
   supportBonusNext: boolean;
   supportUsed: boolean;
   warningIssued: boolean;
+  earlyRiskDone: boolean;
+  boundaryControlDone: boolean;
+  finalTransferDone: boolean;
   observeCount: number;
   lockCount: number;
   keyLockCount: number;
@@ -37,6 +42,8 @@ type GameState = {
     text: string;
     trappedThisRound: number;
     settlement: string;
+    warning: string;
+    next: string;
     affectedAreaIds: AreaId[];
   } | null;
   status: GameStatus;
@@ -57,6 +64,9 @@ const initialState = (): GameState => ({
   supportBonusNext: false,
   supportUsed: false,
   warningIssued: false,
+  earlyRiskDone: false,
+  boundaryControlDone: false,
+  finalTransferDone: false,
   observeCount: 0,
   lockCount: 0,
   keyLockCount: 0,
@@ -64,7 +74,7 @@ const initialState = (): GameState => ({
   supportEffective: false,
   areas: initialAreas.map((area) => ({ ...area, locked: false })),
   selectedAction: null,
-  message: "请先判断水势，再选择行动。",
+  message: "请根据风险线索选择行动。",
   forecast: "",
   eventReport: null,
   status: "playing"
@@ -84,7 +94,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case "RESET":
       return initialState();
     case "CLEAR_SELECTION":
-      return { ...state, selectedAction: null, status: "playing", message: "已取消选择区域。" };
+      return { ...state, selectedAction: null, status: "playing", message: "已取消操作。" };
     case "PICK_ACTION":
       return pickAction(state, action.actionId);
     case "PICK_AREA":
@@ -108,7 +118,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           selectedAction: null,
           eventReport: null,
           status: "playing",
-          message: hasSupport ? "支援力量到达，本回合行动点增加。" : "新一回合开始，请继续判断水势。"
+          message: hasSupport ? "有效行动：支援力量到达，本回合行动点增加。" : "请根据风险线索选择行动。"
         };
       }
     default:
@@ -134,13 +144,12 @@ function pickAction(state: GameState, actionId: ActionId): GameState {
   }
 
   if (actionId === "observe") {
-    const event = floodEvents[state.round - 1];
-    const affectedNames = event.affectedAreaIds.map((areaId) => state.areas.find((area) => area.id === areaId)?.name).filter(Boolean).join("、");
     return spendPoint({
       ...state,
       observeCount: state.observeCount + 1,
-      forecast: `下一回合风险上升区域：${affectedNames}`,
-      message: action.feedback
+      earlyRiskDone: state.earlyRiskDone || state.round === 1,
+      forecast: getObservationNote(state),
+      message: getActionFeedback(state, "observe")
     });
   }
 
@@ -152,7 +161,8 @@ function pickAction(state: GameState, actionId: ActionId): GameState {
     return spendPoint({
       ...state,
       warningIssued: true,
-      message: action.feedback || ""
+      earlyRiskDone: state.earlyRiskDone || state.round === 1,
+      message: getActionFeedback(state, "warn")
     });
   }
 
@@ -170,7 +180,7 @@ function pickAction(state: GameState, actionId: ActionId): GameState {
       supportUsed: true,
       supportBonusNext: true,
       supportEffective: true,
-      message: action.feedback || ""
+      message: getActionFeedback(state, "support")
     });
   }
 
@@ -193,10 +203,10 @@ function evacuateArea(state: GameState, areaId: AreaId): GameState {
   const area = state.areas.find((item) => item.id === areaId);
   if (!area) return state;
   if (area.id === "shelter") {
-    return { ...state, message: "高地避难点是安全转移目的地，不能从这里疏散。" };
+    return { ...state, message: "风险行动：高地避险点是安全转移目的地，不能从这里疏散。" };
   }
   if (area.residents <= 0) {
-    return { ...state, message: `${area.name}已无待转移居民。` };
+    return { ...state, message: `低效行动：${area.name}已无待转移居民。` };
   }
 
   const baseCount = state.warningIssued ? scoringRules.warningEvacuateCount : scoringRules.normalEvacuateCount;
@@ -211,9 +221,10 @@ function evacuateArea(state: GameState, areaId: AreaId): GameState {
   return spendPoint({
     ...state,
     areas: nextAreas,
+    finalTransferDone: state.finalTransferDone || state.round === 3,
     selectedAction: null,
     status: "playing",
-    message: `已将${area.name}的 ${moved} 名居民转移至高地避难点。`
+    message: getActionFeedback(state, "evacuate", area, moved)
   });
 }
 
@@ -221,23 +232,25 @@ function lockArea(state: GameState, areaId: AreaId): GameState {
   const area = state.areas.find((item) => item.id === areaId);
   if (!area) return state;
   if (area.id === "shelter") {
-    return { ...state, message: "高地避难点不能封锁。" };
+    return { ...state, message: "低效行动：高地避险点是转移目的地，不能封锁。" };
   }
   if (area.locked) {
-    return { ...state, message: "该区域已经封锁。" };
+    return { ...state, message: "低效行动：该区域已经封锁。" };
   }
 
   const nextAreas = state.areas.map((item) => (item.id === areaId ? { ...item, locked: true } : item));
   const isKeyLock = scoringRules.keyLockAreaIds.includes(areaId);
+  const boundaryControlDone = state.boundaryControlDone || (state.round === 2 && (areaId === "garage" || areaId === "underpass"));
 
   return spendPoint({
     ...state,
     areas: nextAreas,
+    boundaryControlDone,
     lockCount: state.lockCount + 1,
     keyLockCount: state.keyLockCount + (isKeyLock ? 1 : 0),
     selectedAction: null,
     status: "playing",
-    message: `${area.name}已封锁。后续洪水影响时，将减少人员误入风险。`
+    message: getActionFeedback(state, "lock", area)
   });
 }
 
@@ -245,7 +258,7 @@ function drainArea(state: GameState, areaId: AreaId): GameState {
   const area = state.areas.find((item) => item.id === areaId);
   if (!area) return state;
   if (area.id !== "lowland" && area.id !== "garage") {
-    return { ...state, message: "开启排水只适用于低洼街区或地下车库。" };
+    return { ...state, message: "低效行动：开启排水只适用于低洼街区或地下车库。" };
   }
 
   if (area.risk === "安全") {
@@ -253,7 +266,7 @@ function drainArea(state: GameState, areaId: AreaId): GameState {
       ...state,
       selectedAction: null,
       status: "playing",
-      message: `${area.name}当前没有积水，排水暂无效果。`
+      message: `低效行动：${area.name}当前没有明显积水，排水暂无效果。`
     });
   }
 
@@ -262,7 +275,7 @@ function drainArea(state: GameState, areaId: AreaId): GameState {
       ...state,
       selectedAction: null,
       status: "playing",
-      message: "水位过高，排水效果有限。"
+      message: "风险行动：水位过高，排水效果有限，人员仍可能被困。"
     });
   }
 
@@ -272,7 +285,7 @@ function drainArea(state: GameState, areaId: AreaId): GameState {
     areas: nextAreas,
     selectedAction: null,
     status: "playing",
-    message: `排水系统启动，${area.name}水位暂时下降。`
+    message: getActionFeedback(state, "drain", area)
   });
 }
 
@@ -287,11 +300,13 @@ function resolveRound(state: GameState): GameState {
   if (state.status === "event" || state.status === "finished") return state;
   const event = floodEvents[state.round - 1];
   const floodedAreas = applyFloodEvent(state.areas, state.round);
-  const settlement = settleTrapped(floodedAreas);
+  const settlement = settleTrapped(floodedAreas, state);
   const settlementText =
     settlement.trappedThisRound > 0
-      ? `本回合洪水造成 ${settlement.trappedThisRound} 人被困。高危区域中的未转移居民仍面临风险。`
-      : "本回合没有新增被困人员。前期识险和转移正在发挥作用。";
+      ? `本回合新增 ${settlement.trappedThisRound} 人被困。高危区域中的未转移居民仍面临风险。`
+      : "本回合没有新增被困人员，但风险窗口仍在收窄。";
+  const judgement = getRoundJudgement(state);
+  const brief = roundBriefs[state.round - 1];
 
   return {
     ...state,
@@ -306,6 +321,8 @@ function resolveRound(state: GameState): GameState {
       text: event.text,
       trappedThisRound: settlement.trappedThisRound,
       settlement: settlementText,
+      warning: judgement,
+      next: brief.next,
       affectedAreaIds: event.affectedAreaIds
     }
   };
@@ -331,11 +348,16 @@ function applyFloodEvent(areas: GameArea[], round: number): GameArea[] {
   });
 }
 
-function settleTrapped(areas: GameArea[]) {
+function settleTrapped(areas: GameArea[], state: GameState) {
   let trappedThisRound = 0;
   const nextAreas = areas.map((area) => {
     if (area.id === "shelter" || area.risk !== "高危" || area.residents <= 0) return area;
-    const rate = area.locked ? scoringRules.trappedRateLocked : scoringRules.trappedRateUnlocked;
+    const isUncontrolledUnderground = (area.id === "garage" || area.id === "underpass") && !state.boundaryControlDone && state.round >= 2;
+    const rate = area.locked
+      ? scoringRules.trappedRateLocked
+      : isUncontrolledUnderground
+        ? scoringRules.trappedRateUncontrolledUnderground
+        : scoringRules.trappedRateUnlocked;
     const trapped = Math.ceil(area.residents * rate);
     trappedThisRound += trapped;
     return { ...area, residents: Math.max(0, area.residents - trapped) };
@@ -356,10 +378,11 @@ function lowerRisk(risk: RiskLevel): RiskLevel {
 
 function getResult(state: GameState) {
   const evacuated = getShelterResidents(state.areas);
-  if (evacuated >= 35 && state.trapped <= 8 && state.observeCount >= 1) return resultTypes[0];
-  if (evacuated >= 30 && (state.observeCount === 0 || state.lockCount < 2)) return resultTypes[1];
+  const judgementCount = getJudgementCount(state);
+  if (state.trapped > 12 || evacuated < 25 || judgementCount === 0) return resultTypes[3];
+  if (judgementCount >= 2 && evacuated >= 35 && state.trapped <= 8 && state.finalTransferDone) return resultTypes[0];
+  if (evacuated >= 30 && (judgementCount < 2 || !state.earlyRiskDone)) return resultTypes[1];
   if (state.observeCount >= 2 && evacuated < 30) return resultTypes[2];
-  if (state.trapped > 12 || evacuated < 25) return resultTypes[3];
   return resultTypes[1];
 }
 
@@ -369,11 +392,86 @@ function getShelterResidents(areas: GameArea[]) {
 
 function getAbilityScores(state: GameState) {
   const evacuated = getShelterResidents(state.areas);
+  const judgementCount = getJudgementCount(state);
   return {
     risk: state.observeCount >= 2 ? "高" : state.observeCount === 1 ? "中" : "待提升",
     boundary: state.lockCount >= 3 && state.keyLockCount >= 2 ? "高" : state.lockCount >= 1 ? "中" : "待提升",
-    efficiency: evacuated >= 35 && state.warningIssued && state.supportEffective ? "高" : evacuated >= 25 ? "中" : "待提升"
+    efficiency: evacuated >= 35 && state.warningIssued && state.supportEffective ? "高" : evacuated >= 25 ? "中" : "待提升",
+    judgement: `${judgementCount} / 3`
   };
+}
+
+function getJudgementCount(state: GameState) {
+  return [state.earlyRiskDone, state.boundaryControlDone, state.finalTransferDone].filter(Boolean).length;
+}
+
+function getRoundJudgement(state: GameState) {
+  if (state.round === 1) {
+    return state.earlyRiskDone
+      ? "你已经注意到水势变化，下一回合能更早判断地下空间风险。"
+      : "你还没有弄清水势走向，城区也没有收到预警。下一回合风险会变得更难判断。";
+  }
+
+  if (state.round === 2) {
+    return state.boundaryControlDone
+      ? "关键危险区已经封锁，人员误入风险下降。"
+      : "地下空间没有及时管控。倒灌发生后，人员误入风险上升。";
+  }
+
+  return state.finalTransferDone
+    ? "你在最后窗口期组织了转移，减少了滞留风险。"
+    : "最后转移窗口已经关闭。仍在高危区域的人将面临更大被困风险。";
+}
+
+function getObservationNote(state: GameState) {
+  if (state.round === 1) return "风险线索已更新：水流正在向低洼街区和地下空间聚集。";
+  if (state.round === 2 && !state.earlyRiskDone) return "";
+  if (state.round === 2) return "风险线索已更新：地下空间和下穿通道水位持续上升。";
+  return "风险线索已更新：高危区滞留风险正在快速扩大。";
+}
+
+function getActionFeedback(state: GameState, actionId: ActionId, area?: GameArea, moved?: number) {
+  if (actionId === "observe") {
+    if (state.round === 1) return "有效行动：你看清了水流正在向低洼街区和地下空间聚集。接下来的判断会更准确。";
+    if (state.round === 2) return "低效行动：你确认了地下空间正在倒灌，但如果不及时管控，人员误入风险仍会上升。";
+    return "低效行动：你再次确认了风险方向，但此时内涝已经加剧，单纯观察已经难以改变局面。";
+  }
+
+  if (actionId === "warn") {
+    if (state.round === 1) return "有效行动：预警提前发出，居民开始准备转移。后续疏散效率提升。";
+    if (state.round === 3) return "低效行动：预警可以提醒更多人，但此时高危区域已经形成，单靠提醒已经不够。";
+    return "有效行动：预警继续扩散，居民配合转移的意愿提升。";
+  }
+
+  if (actionId === "support") {
+    if (state.round === 1) return "低效行动：支援请求已经发出，但水势方向仍不清楚，下一步判断会更吃紧。";
+    if (state.round === 2 && !state.boundaryControlDone) return "风险行动：支援请求已发出，但当前危险区域仍未管控，地下空间风险继续扩大。";
+    return "有效行动：支援请求已发出，下一回合可用行动点增加。";
+  }
+
+  if (actionId === "evacuate" && area) {
+    if (state.round === 1 && !state.earlyRiskDone) {
+      return `低效行动：已将${area.name} ${moved} 名居民转移至高地避险点，但由于尚未判断水势，可能遗漏真正危险的区域。`;
+    }
+    if (state.round === 3) {
+      return `有效行动：你抓住了最后窗口，将${area.name} ${moved} 名居民转移至高地避险点。`;
+    }
+    return `有效行动：已将${area.name} ${moved} 名居民转移至高地避险点。`;
+  }
+
+  if (actionId === "lock" && area) {
+    if (state.round === 2 && area.id === "garage") return "有效行动：地下车库已封锁。倒灌发生时，人员误入风险下降。";
+    if (state.round === 2 && area.id === "underpass") return "有效行动：下穿通道已封锁。低洼交通通道的误入风险下降。";
+    if (area.id === "garage" || area.id === "underpass" || area.id === "riverbank") return `${state.round === 3 ? "低效行动" : "有效行动"}：${area.name}已封锁，人员误入风险下降。`;
+    return `低效行动：${area.name}已封锁，但当前更大的风险仍集中在低洼、地下和临水区域。`;
+  }
+
+  if (actionId === "drain" && area) {
+    if (state.round === 3) return `风险行动：${area.name}水位已接近高危，排水只能暂时缓解，仍需关注人员滞留。`;
+    return `有效行动：排水系统启动，${area.name}水位暂时下降。`;
+  }
+
+  return "请根据风险线索选择行动。";
 }
 
 function isAreaSelectable(area: GameArea, selectedAction: ActionId | null) {
@@ -392,7 +490,8 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
   const scores = getAbilityScores(state);
   const evacuated = getShelterResidents(state.areas);
   const eventAffectedIds = state.eventReport?.affectedAreaIds || [];
-  const roundTask = floodGameText.roundTasks[state.round - 1] || floodGameText.roundTasks[0];
+  const roundBrief = roundBriefs[state.round - 1] || roundBriefs[0];
+  const judgementCount = getJudgementCount(state);
 
   if (state.status === "finished") {
     return (
@@ -404,10 +503,17 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
           <div className="flood-score-grid">
             <Metric label="疏散人数" value={`${evacuated} 人`} />
             <Metric label="被困人数" value={`${state.trapped} 人`} />
+            <Metric label="关键判断" value={scores.judgement} />
             <Metric label="识险能力" value={scores.risk} />
             <Metric label="边界判断" value={scores.boundary} />
             <Metric label="行动效率" value={scores.efficiency} />
           </div>
+          <section className="judgement-review" aria-label={floodGameText.judgementReviewTitle}>
+            <h3>{floodGameText.judgementReviewTitle}</h3>
+            <ReviewItem done={state.earlyRiskDone} title={judgementReviews.earlyRisk.title} doneText={judgementReviews.earlyRisk.done} missedText={judgementReviews.earlyRisk.missed} />
+            <ReviewItem done={state.boundaryControlDone} title={judgementReviews.boundaryControl.title} doneText={judgementReviews.boundaryControl.done} missedText={judgementReviews.boundaryControl.missed} />
+            <ReviewItem done={state.finalTransferDone} title={judgementReviews.finalTransfer.title} doneText={judgementReviews.finalTransfer.done} missedText={judgementReviews.finalTransfer.missed} />
+          </section>
           <button className="primary-btn wide" type="button" onClick={onDecode}>
             {floodGameText.viewDecode}
           </button>
@@ -439,8 +545,23 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
         <span />
       </div>
       <header className="flood-head">
+        <p className="kicker">{floodGameText.subtitle}</p>
         <h2>{floodGameText.title}</h2>
-        <p className="round-task">{roundTask}</p>
+        <p className="transfer-tip">{floodGameText.transferTip}</p>
+        <div className="round-intel">
+          <strong>{roundBrief.title}</strong>
+          <p>{roundBrief.situation}</p>
+          <dl>
+            <div>
+              <dt>{floodGameText.clueLabel}</dt>
+              <dd>{roundBrief.clue}</dd>
+            </div>
+            <div>
+              <dt>{floodGameText.goalLabel}</dt>
+              <dd>{roundBrief.goal}</dd>
+            </div>
+          </dl>
+        </div>
       </header>
 
       <div className="flood-dashboard" aria-label="推演状态条">
@@ -448,6 +569,7 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
         <Metric label={floodGameText.apLabel} value={`${state.actionPoints} / ${state.maxActionPoints}`} />
         <Metric label={floodGameText.evacuatedLabel} value={`${evacuated} 人`} />
         <Metric label={floodGameText.trappedLabel} value={`${state.trapped} 人`} />
+        <Metric label={floodGameText.judgementLabel} value={`${judgementCount} / 3`} />
       </div>
 
       <div className={`flood-map round-${state.round} ${state.status === "selecting" ? "is-targeting" : ""}`} aria-label="古地图式城市风险推演图">
@@ -528,10 +650,12 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
       {state.status === "event" && state.eventReport && (
         <div className="toast-backdrop" role="dialog" aria-modal="true">
           <div className="toast-card flood-event-card">
-            <p className="kicker">洪水事件</p>
+            <p className="kicker">内涝事件</p>
             <h3>{state.eventReport.title}</h3>
             <p>{state.eventReport.text}</p>
+            <p>{state.eventReport.warning}</p>
             <p>{state.eventReport.settlement}</p>
+            <small>{state.eventReport.next}</small>
             <button className="primary-btn wide" type="button" onClick={() => dispatch({ type: "CONTINUE_AFTER_EVENT" })}>
               {state.round >= 3 ? floodGameText.showResult : floodGameText.continue}
             </button>
@@ -544,6 +668,7 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
           <div className="toast-card flood-guide-card">
             <p className="kicker">{floodGameText.pageTitle}</p>
             <h3>{floodGameText.title}</h3>
+            <p>{floodGameText.transferTip}</p>
             <p>{floodGameText.guide}</p>
             <button
               className="primary-btn wide"
@@ -568,5 +693,17 @@ function Metric({ label, value }: { label: string; value: string }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
+  );
+}
+
+function ReviewItem({ done, title, doneText, missedText }: { done: boolean; title: string; doneText: string; missedText: string }) {
+  return (
+    <article className={`review-item ${done ? "is-done" : "is-missed"}`}>
+      <strong>
+        {title}
+        <span>{done ? "已完成" : "未完成"}</span>
+      </strong>
+      <p>{done ? doneText : missedText}</p>
+    </article>
   );
 }
