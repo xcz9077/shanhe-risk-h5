@@ -37,6 +37,7 @@ type GameState = {
     text: string;
     trappedThisRound: number;
     settlement: string;
+    affectedAreaIds: AreaId[];
   } | null;
   status: GameStatus;
 };
@@ -68,6 +69,15 @@ const initialState = (): GameState => ({
   eventReport: null,
   status: "playing"
 });
+
+const areaPositions: Record<AreaId, { left: string; top: string }> = {
+  riverbank: { left: "15%", top: "21%" },
+  lowland: { left: "36%", top: "50%" },
+  garage: { left: "54%", top: "65%" },
+  underpass: { left: "67%", top: "38%" },
+  residential: { left: "34%", top: "24%" },
+  shelter: { left: "76%", top: "15%" }
+};
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -295,7 +305,8 @@ function resolveRound(state: GameState): GameState {
       title: event.title,
       text: event.text,
       trappedThisRound: settlement.trappedThisRound,
-      settlement: settlementText
+      settlement: settlementText,
+      affectedAreaIds: event.affectedAreaIds
     }
   };
 }
@@ -365,12 +376,21 @@ function getAbilityScores(state: GameState) {
   };
 }
 
+function isAreaSelectable(area: GameArea, selectedAction: ActionId | null) {
+  if (!selectedAction) return false;
+  if (selectedAction === "evacuate") return area.id !== "shelter" && area.residents > 0;
+  if (selectedAction === "lock") return area.id !== "shelter" && !area.locked;
+  if (selectedAction === "drain") return area.id === "lowland" || area.id === "garage";
+  return false;
+}
+
 export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: () => void }) {
   const [state, dispatch] = useReducer(gameReducer, undefined, initialState);
   const selectedAction = actionCards.find((action) => action.id === state.selectedAction);
   const result = getResult(state);
   const scores = getAbilityScores(state);
   const evacuated = getShelterResidents(state.areas);
+  const eventAffectedIds = state.eventReport?.affectedAreaIds || [];
 
   if (state.status === "finished") {
     return (
@@ -415,7 +435,7 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
         <p>{floodGameText.background}</p>
       </header>
 
-      <div className="flood-dashboard">
+      <div className="flood-dashboard" aria-label="推演状态条">
         <Metric label={floodGameText.roundLabel} value={`第 ${state.round} / 3 回合`} />
         <Metric label={floodGameText.apLabel} value={`${state.actionPoints} / ${state.maxActionPoints}`} />
         <Metric label={floodGameText.evacuatedLabel} value={`${evacuated} 人`} />
@@ -428,20 +448,39 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
         {state.forecast && <small>{state.forecast}</small>}
       </div>
 
-      <div className="flood-map" aria-label="城市风险推演图">
+      <div className={`flood-map ${state.status === "selecting" ? "is-targeting" : ""}`} aria-label="古地图式城市风险推演图">
+        <svg className="map-lines" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <path className="river-line" d="M 3 18 C 18 28, 26 38, 33 51 S 49 70, 69 76 S 90 77, 98 91" />
+          <path className="flow-arrow flow-one" d="M 17 30 C 27 38, 32 47, 38 56" />
+          <path className="flow-arrow flow-two" d="M 47 63 C 57 68, 66 70, 76 73" />
+          <path className="ridge-line" d="M 61 12 C 72 10, 82 12, 94 18" />
+          <path className="boundary-line" d="M 12 70 C 30 64, 52 84, 82 61" />
+        </svg>
+        <span className="map-label river-label">河道</span>
+        <span className="map-label shelter-label">高地</span>
+        <span className="map-label low-label">低洼带</span>
         {state.areas.map((area) => (
+          (() => {
+            const selectable = isAreaSelectable(area, state.selectedAction);
+            const muted = Boolean(state.selectedAction) && !selectable;
+            const affected = eventAffectedIds.includes(area.id);
+            return (
           <button
-            className={`area-card risk-${riskLevels.indexOf(area.risk)} ${area.locked ? "is-locked" : ""} ${state.selectedAction ? "is-selectable" : ""}`}
+            className={`area-node risk-${riskLevels.indexOf(area.risk)} ${area.locked ? "is-locked" : ""} ${selectable ? "is-selectable" : ""} ${muted ? "is-muted" : ""} ${affected ? "is-affected" : ""}`}
             type="button"
             key={area.id}
+            style={areaPositions[area.id]}
+            disabled={Boolean(state.selectedAction) && !selectable}
             onClick={() => dispatch({ type: "PICK_AREA", areaId: area.id })}
           >
             <strong>{area.name}</strong>
-            <span>{area.risk}</span>
+            <span className="risk-pill">{area.risk}</span>
             <small>{area.residents} 人</small>
             <em>{area.locked ? floodGameText.lockedLabel : floodGameText.unlockedLabel}</em>
             {area.focus && <i>{floodGameText.focusLabel}</i>}
           </button>
+            );
+          })()
         ))}
       </div>
 
