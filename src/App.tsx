@@ -38,7 +38,7 @@ function App() {
     }
 
     setPage(nextPage);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   function showUnavailable() {

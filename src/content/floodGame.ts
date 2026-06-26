@@ -10,6 +10,16 @@ export const floodGameText = {
   testEntryButton: "开始推演",
   background:
     "不周山崩后，洪水逼近城中。你是城中应急指挥者，只有三回合时间。请在有限行动点内，看清水势、发布预警、疏散居民、封锁险区，尽量减少被困人数。",
+  guide:
+    "你每回合只有 2 个行动点。先观察水势，还是直接疏散？你的选择会影响三回合后的结果。",
+  guideButton: "开始推演",
+  roundTasks: [
+    "第 1 回合：洪水初涨，请先判断水势，保护低洼区域。",
+    "第 2 回合：地下空间开始倒灌，优先处理车库与桥洞。",
+    "第 3 回合：洪涛入城，立即转移剩余居民并封住高危边界。"
+  ],
+  selectingPrefix: "正在执行",
+  cancelAction: "取消操作",
   targetHint: "请选择一个区域作为行动目标。",
   endRound: "结束本回合",
   continue: "继续推演",
@@ -43,38 +53,50 @@ export const actionCards = [
   {
     id: "observe" as ActionId,
     title: "观察水势",
+    shortTitle: "观察",
     desc: "提前显示下一回合洪水会影响的区域，提升识险能力。",
+    shortDesc: "预判水势",
     feedback: "你观察到水流正在向低洼街区和地下空间聚集。下一回合这些区域风险会上升。"
   },
   {
     id: "warn" as ActionId,
     title: "发布预警",
+    shortTitle: "预警",
     desc: "提高居民配合度，使后续疏散效率提升。",
+    shortDesc: "提升疏散",
     feedback: "预警已发布，居民开始准备转移。之后疏散效率提升。",
     repeated: "预警已经发布，无需重复发布。"
   },
   {
     id: "evacuate" as ActionId,
     title: "疏散居民",
+    shortTitle: "疏散",
     desc: "选择一个区域，将居民转移到高地避难点。",
+    shortDesc: "转移居民",
     targetHint: "选择需要疏散的区域。"
   },
   {
     id: "lock" as ActionId,
     title: "封锁危险区",
+    shortTitle: "封锁",
     desc: "选择一个区域封锁，防止人员误入，降低后续被困风险。",
+    shortDesc: "阻止误入",
     targetHint: "选择需要封锁的风险区域。"
   },
   {
     id: "drain" as ActionId,
     title: "开启排水",
+    shortTitle: "排水",
     desc: "选择低洼街区或地下车库，尝试降低一个风险等级。",
+    shortDesc: "降低积水",
     targetHint: "选择低洼街区或地下车库。"
   },
   {
     id: "support" as ActionId,
     title: "请求支援",
+    shortTitle: "支援",
     desc: "本回合没有直接救援效果，下一回合行动点 +1。",
+    shortDesc: "下回合+1",
     feedback: "支援请求已发出。下一回合可用行动点增加。",
     repeated: "本局已经请求过支援，无法重复使用。",
     finalRound: "当前已是最后一回合，请求支援无法增加下一回合行动点。"

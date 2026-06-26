@@ -3,18 +3,24 @@
 }
 
 .flood-head {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .flood-head h2 {
-  margin-bottom: 8px;
-  font-size: 27px;
+  margin-bottom: 7px;
+  color: var(--blue);
+  font-size: 24px;
 }
 
-.flood-head p:not(.kicker) {
-  color: #4b4b42;
-  font-size: 14px;
-  line-height: 1.62;
+.round-task {
+  padding: 9px 11px;
+  border-left: 3px solid var(--gold);
+  border-radius: 7px;
+  background: rgba(255, 247, 232, 0.74);
+  color: #3f4f5f;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .flood-dashboard {
@@ -22,7 +28,7 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
   overflow: hidden;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   border: 1px solid rgba(20, 48, 76, 0.16);
   border-radius: 8px;
   background: rgba(255, 247, 232, 0.86);
@@ -60,16 +66,7 @@
 }
 
 .flood-message {
-  display: grid;
-  gap: 4px;
-  margin: 10px 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(184, 137, 63, 0.34);
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, rgba(140, 46, 36, 0.08), rgba(255, 247, 232, 0.7)),
-    rgba(255, 247, 232, 0.78);
-  box-shadow: 0 8px 18px rgba(57, 40, 25, 0.08);
+  display: none;
 }
 
 .flood-message strong {
@@ -86,17 +83,19 @@
 
 .flood-map {
   position: relative;
-  height: min(104vw, 470px);
-  min-height: 385px;
-  max-height: 510px;
-  margin: 10px 0;
+  height: min(58svh, 540px);
+  min-height: 448px;
+  max-height: 560px;
+  margin: 8px 0 10px;
   overflow: hidden;
   border: 1px solid rgba(82, 62, 38, 0.2);
   border-radius: 10px;
   background:
-    radial-gradient(circle at 16% 20%, rgba(47, 111, 131, 0.2), transparent 16%),
-    radial-gradient(circle at 38% 55%, rgba(47, 111, 131, 0.16), transparent 19%),
+    radial-gradient(ellipse at 18% 18%, rgba(47, 111, 131, 0.22), transparent 18%),
+    radial-gradient(ellipse at 41% 43%, rgba(47, 111, 131, 0.18), transparent 22%),
+    radial-gradient(ellipse at 35% 66%, rgba(47, 111, 131, 0.13), transparent 24%),
     radial-gradient(circle at 73% 18%, rgba(184, 137, 63, 0.18), transparent 18%),
+    linear-gradient(118deg, transparent 0 58%, rgba(140, 46, 36, 0.07) 59% 61%, transparent 62%),
     linear-gradient(135deg, rgba(255, 247, 232, 0.96), rgba(233, 220, 195, 0.94)),
     var(--paper);
   box-shadow: var(--shadow);
@@ -132,8 +131,8 @@
 
 .river-line {
   fill: none;
-  stroke: rgba(47, 111, 131, 0.46);
-  stroke-width: 7;
+  stroke: rgba(47, 111, 131, 0.5);
+  stroke-width: 8.2;
   stroke-linecap: round;
   stroke-dasharray: 1 8;
 }
@@ -141,14 +140,44 @@
 .flow-arrow {
   fill: none;
   stroke: rgba(47, 111, 131, 0.8);
-  stroke-width: 1.8;
+  stroke-width: 2.2;
   stroke-linecap: round;
-  marker-end: url("#none");
+  marker-end: url("#water-arrow");
 }
 
 .flow-one,
 .flow-two {
-  stroke-dasharray: 5 5;
+  stroke-dasharray: 7 5;
+  animation: waterMove 1.7s linear infinite;
+}
+
+.flood-front {
+  fill: none;
+  stroke: rgba(47, 111, 131, 0.18);
+  stroke-width: 12;
+  stroke-linecap: round;
+  opacity: 0;
+}
+
+.round-1 .front-one,
+.round-2 .front-one,
+.round-3 .front-one,
+.round-2 .front-two,
+.round-3 .front-two,
+.round-3 .front-three {
+  opacity: 1;
+}
+
+.round-3 .front-one,
+.round-3 .front-two,
+.round-3 .front-three {
+  stroke: rgba(140, 46, 36, 0.16);
+}
+
+@keyframes waterMove {
+  to {
+    stroke-dashoffset: -24;
+  }
 }
 
 .ridge-line,
@@ -175,8 +204,8 @@
 }
 
 .river-label {
-  left: 9%;
-  top: 45%;
+  left: 8%;
+  top: 32%;
 }
 
 .shelter-label {
@@ -185,25 +214,27 @@
 }
 
 .low-label {
-  left: 41%;
-  bottom: 13%;
+  left: 37%;
+  top: 57%;
 }
 
 .area-node {
   position: absolute;
   z-index: 2;
   display: grid;
-  gap: 3px;
-  width: 118px;
-  min-height: 88px;
-  padding: 10px;
-  border: 1px solid rgba(20, 48, 76, 0.16);
-  border-radius: 9px;
-  background: rgba(255, 247, 232, 0.88);
+  gap: 4px;
+  width: 114px;
+  min-height: 90px;
+  padding: 10px 10px 9px;
+  border: 1px solid rgba(20, 48, 76, 0.2);
+  border-radius: 50% 45% 48% 42%;
+  background:
+    linear-gradient(145deg, rgba(255, 247, 232, 0.94), rgba(232, 223, 205, 0.88));
   color: var(--blue);
   text-align: left;
   transform: translate(-50%, -50%);
   box-shadow: 0 10px 24px rgba(57, 40, 25, 0.16);
+  transition: opacity 160ms ease, transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
 .area-node::before {
@@ -260,6 +291,14 @@
   background: #8c2e24;
 }
 
+.area-node.risk-3 {
+  border-color: rgba(140, 46, 36, 0.58);
+  background:
+    repeating-linear-gradient(135deg, rgba(140, 46, 36, 0.1) 0 3px, transparent 3px 8px),
+    linear-gradient(145deg, rgba(255, 247, 232, 0.94), rgba(232, 223, 205, 0.9));
+  animation: dangerBreath 1.6s ease-in-out infinite;
+}
+
 .area-node.risk-2::before,
 .area-node.risk-3::before {
   border-color: rgba(47, 111, 131, 0.22);
@@ -277,15 +316,24 @@
     linear-gradient(135deg, rgba(255, 247, 232, 0.9), rgba(232, 223, 205, 0.9));
 }
 
+.area-node.is-shelter {
+  border-color: rgba(71, 109, 90, 0.48);
+  box-shadow:
+    0 0 0 7px rgba(71, 109, 90, 0.08),
+    0 10px 24px rgba(57, 40, 25, 0.12);
+}
+
 .area-node.is-selectable {
   border-color: rgba(184, 137, 63, 0.76);
   box-shadow:
-    0 0 0 3px rgba(184, 137, 63, 0.22),
+    0 0 0 4px rgba(184, 137, 63, 0.28),
+    0 0 0 12px rgba(184, 137, 63, 0.12),
     0 12px 28px rgba(57, 40, 25, 0.2);
+  transform: translate(-50%, -50%) scale(1.04);
 }
 
 .area-node.is-muted {
-  opacity: 0.42;
+  opacity: 0.32;
 }
 
 .area-node.is-affected {
@@ -301,19 +349,100 @@
   }
 }
 
+@keyframes dangerBreath {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 8px rgba(140, 46, 36, 0.08),
+      0 10px 24px rgba(57, 40, 25, 0.16);
+  }
+  50% {
+    box-shadow:
+      0 0 0 15px rgba(140, 46, 36, 0.14),
+      0 12px 28px rgba(57, 40, 25, 0.2);
+  }
+}
+
+.target-banner {
+  position: absolute;
+  z-index: 4;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 8px;
+  align-items: center;
+  padding: 8px 9px;
+  border: 1px solid rgba(184, 137, 63, 0.46);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.92);
+  box-shadow: 0 8px 18px rgba(57, 40, 25, 0.12);
+}
+
+.target-banner strong {
+  color: var(--red);
+  font-size: 12px;
+}
+
+.target-banner span {
+  color: #4b4b42;
+  font-size: 12px;
+}
+
+.target-banner button {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  padding: 6px 8px;
+  border: 1px solid rgba(20, 48, 76, 0.18);
+  border-radius: 999px;
+  background: rgba(20, 48, 76, 0.08);
+  color: var(--blue);
+  font-size: 12px;
+}
+
+.map-feedback {
+  position: absolute;
+  z-index: 4;
+  right: 10px;
+  bottom: 10px;
+  left: 10px;
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border: 1px solid rgba(184, 137, 63, 0.34);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(140, 46, 36, 0.08), rgba(255, 247, 232, 0.72)),
+    rgba(255, 247, 232, 0.9);
+  box-shadow: 0 10px 22px rgba(57, 40, 25, 0.14);
+}
+
+.map-feedback strong {
+  color: var(--red);
+  font-size: 12px;
+}
+
+.map-feedback span,
+.map-feedback small {
+  color: #4b4b42;
+  font-size: 12px;
+  line-height: 1.42;
+}
+
 .action-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px;
-  margin: 12px 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 8px 0;
 }
 
 .action-card {
   display: grid;
-  gap: 5px;
+  gap: 2px;
   width: 100%;
-  min-height: 74px;
-  padding: 11px 12px;
+  min-height: 50px;
+  padding: 8px 7px;
   border: 1px solid rgba(20, 48, 76, 0.14);
   border-radius: 8px;
   background: rgba(255, 247, 232, 0.9);
@@ -322,14 +451,19 @@
 }
 
 .action-card strong {
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.2;
 }
 
 .action-card span {
   color: #4b4b42;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.42;
+}
+
+.action-card.is-done {
+  border-color: rgba(71, 109, 90, 0.32);
+  background: rgba(232, 239, 226, 0.86);
 }
 
 .action-card:disabled {
@@ -339,6 +473,17 @@
 
 .flood-event-card h3 {
   margin-bottom: 10px;
+}
+
+.flood-guide-card h3 {
+  margin-bottom: 10px;
+  color: var(--blue);
+}
+
+.flood-guide-card p:not(.kicker) {
+  margin-bottom: 12px;
+  color: #4b4b42;
+  line-height: 1.68;
 }
 
 .flood-score-grid {
@@ -390,10 +535,14 @@
 }
 
 @media (max-width: 390px) {
+  .flood-map {
+    min-height: 438px;
+  }
+
   .area-node {
-    width: 108px;
-    min-height: 82px;
-    padding: 8px;
+    width: 106px;
+    min-height: 84px;
+    padding: 8px 8px 7px;
   }
 
   .area-node strong {
@@ -401,7 +550,7 @@
   }
 
   .action-card {
-    min-height: 70px;
-    padding: 10px;
+    min-height: 48px;
+    padding: 7px 6px;
   }
 }

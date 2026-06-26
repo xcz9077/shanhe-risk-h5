@@ -1,4 +1,4 @@
-import { useReducer } from "react";
+import { useReducer, useState } from "react";
 import {
   actionCards,
   floodEvents,
@@ -71,12 +71,12 @@ const initialState = (): GameState => ({
 });
 
 const areaPositions: Record<AreaId, { left: string; top: string }> = {
-  riverbank: { left: "15%", top: "21%" },
-  lowland: { left: "36%", top: "50%" },
-  garage: { left: "54%", top: "65%" },
-  underpass: { left: "67%", top: "38%" },
-  residential: { left: "34%", top: "24%" },
-  shelter: { left: "76%", top: "15%" }
+  riverbank: { left: "25%", top: "14%" },
+  lowland: { left: "49%", top: "35%" },
+  garage: { left: "23%", top: "54%" },
+  underpass: { left: "76%", top: "54%" },
+  residential: { left: "49%", top: "78%" },
+  shelter: { left: "78%", top: "20%" }
 };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -386,11 +386,13 @@ function isAreaSelectable(area: GameArea, selectedAction: ActionId | null) {
 
 export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: () => void }) {
   const [state, dispatch] = useReducer(gameReducer, undefined, initialState);
+  const [showGuide, setShowGuide] = useState(true);
   const selectedAction = actionCards.find((action) => action.id === state.selectedAction);
   const result = getResult(state);
   const scores = getAbilityScores(state);
   const evacuated = getShelterResidents(state.areas);
   const eventAffectedIds = state.eventReport?.affectedAreaIds || [];
+  const roundTask = floodGameText.roundTasks[state.round - 1] || floodGameText.roundTasks[0];
 
   if (state.status === "finished") {
     return (
@@ -409,7 +411,14 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
           <button className="primary-btn wide" type="button" onClick={onDecode}>
             {floodGameText.viewDecode}
           </button>
-          <button className="secondary-btn wide" type="button" onClick={() => dispatch({ type: "RESET" })}>
+          <button
+            className="secondary-btn wide"
+            type="button"
+            onClick={() => {
+              dispatch({ type: "RESET" });
+              setShowGuide(true);
+            }}
+          >
             {floodGameText.restart}
           </button>
           <button className="ghost-btn wide" type="button" onClick={onBack}>
@@ -430,9 +439,8 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
         <span />
       </div>
       <header className="flood-head">
-        <p className="kicker">{floodGameText.pageTitle}</p>
         <h2>{floodGameText.title}</h2>
-        <p>{floodGameText.background}</p>
+        <p className="round-task">{roundTask}</p>
       </header>
 
       <div className="flood-dashboard" aria-label="推演状态条">
@@ -442,61 +450,72 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
         <Metric label={floodGameText.trappedLabel} value={`${state.trapped} 人`} />
       </div>
 
-      <div className="flood-message">
-        <strong>{state.status === "selecting" ? selectedAction?.title : "现场反馈"}</strong>
-        <span>{state.message}</span>
-        {state.forecast && <small>{state.forecast}</small>}
-      </div>
-
-      <div className={`flood-map ${state.status === "selecting" ? "is-targeting" : ""}`} aria-label="古地图式城市风险推演图">
+      <div className={`flood-map round-${state.round} ${state.status === "selecting" ? "is-targeting" : ""}`} aria-label="古地图式城市风险推演图">
         <svg className="map-lines" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <defs>
+            <marker id="water-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6f83" opacity="0.78" />
+            </marker>
+          </defs>
           <path className="river-line" d="M 3 18 C 18 28, 26 38, 33 51 S 49 70, 69 76 S 90 77, 98 91" />
           <path className="flow-arrow flow-one" d="M 17 30 C 27 38, 32 47, 38 56" />
           <path className="flow-arrow flow-two" d="M 47 63 C 57 68, 66 70, 76 73" />
+          <path className="flood-front front-one" d="M 8 24 C 19 32, 26 40, 34 50" />
+          <path className="flood-front front-two" d="M 34 53 C 45 61, 58 66, 74 68" />
+          <path className="flood-front front-three" d="M 15 77 C 37 69, 61 86, 91 66" />
           <path className="ridge-line" d="M 61 12 C 72 10, 82 12, 94 18" />
           <path className="boundary-line" d="M 12 70 C 30 64, 52 84, 82 61" />
         </svg>
         <span className="map-label river-label">河道</span>
         <span className="map-label shelter-label">高地</span>
         <span className="map-label low-label">低洼带</span>
-        {state.areas.map((area) => (
-          (() => {
-            const selectable = isAreaSelectable(area, state.selectedAction);
-            const muted = Boolean(state.selectedAction) && !selectable;
-            const affected = eventAffectedIds.includes(area.id);
-            return (
-          <button
-            className={`area-node risk-${riskLevels.indexOf(area.risk)} ${area.locked ? "is-locked" : ""} ${selectable ? "is-selectable" : ""} ${muted ? "is-muted" : ""} ${affected ? "is-affected" : ""}`}
-            type="button"
-            key={area.id}
-            style={areaPositions[area.id]}
-            disabled={Boolean(state.selectedAction) && !selectable}
-            onClick={() => dispatch({ type: "PICK_AREA", areaId: area.id })}
-          >
-            <strong>{area.name}</strong>
-            <span className="risk-pill">{area.risk}</span>
-            <small>{area.residents} 人</small>
-            <em>{area.locked ? floodGameText.lockedLabel : floodGameText.unlockedLabel}</em>
-            {area.focus && <i>{floodGameText.focusLabel}</i>}
-          </button>
-            );
-          })()
-        ))}
+        {state.status === "selecting" && selectedAction && (
+          <div className="target-banner">
+            <strong>{floodGameText.selectingPrefix}：{selectedAction.title}</strong>
+            <span>{selectedAction.targetHint || floodGameText.targetHint}</span>
+            <button type="button" onClick={() => dispatch({ type: "CLEAR_SELECTION" })}>{floodGameText.cancelAction}</button>
+          </div>
+        )}
+        {state.areas.map((area) => {
+          const selectable = isAreaSelectable(area, state.selectedAction);
+          const muted = Boolean(state.selectedAction) && !selectable;
+          const affected = eventAffectedIds.includes(area.id);
+          return (
+            <button
+              className={`area-node risk-${riskLevels.indexOf(area.risk)} ${area.id === "shelter" ? "is-shelter" : ""} ${area.locked ? "is-locked" : ""} ${selectable ? "is-selectable" : ""} ${muted ? "is-muted" : ""} ${affected ? "is-affected" : ""}`}
+              type="button"
+              key={area.id}
+              style={areaPositions[area.id]}
+              disabled={Boolean(state.selectedAction) && !selectable}
+              onClick={() => dispatch({ type: "PICK_AREA", areaId: area.id })}
+            >
+              <strong>{area.name}</strong>
+              <span className="risk-pill">{area.risk}</span>
+              <small>{area.residents} 人</small>
+              <em>{area.locked ? floodGameText.lockedLabel : floodGameText.unlockedLabel}</em>
+              {area.focus && <i>{floodGameText.focusLabel}</i>}
+            </button>
+          );
+        })}
+        <div className="map-feedback">
+          <strong>{state.status === "selecting" ? selectedAction?.title : "现场反馈"}</strong>
+          <span>{state.message}</span>
+          {state.forecast && <small>{state.forecast}</small>}
+        </div>
       </div>
-
-      {state.status === "selecting" && (
-        <button className="ghost-btn wide" type="button" onClick={() => dispatch({ type: "CLEAR_SELECTION" })}>
-          取消选择
-        </button>
-      )}
 
       <div className="action-grid">
         {actionCards.map((action) => {
-          const disabled = state.status !== "playing" || state.actionPoints <= 0 || (action.id === "support" && (state.supportUsed || state.round >= 3));
+          const completed = (action.id === "warn" && state.warningIssued) || (action.id === "support" && state.supportUsed);
+          const disabled =
+            state.status !== "playing" ||
+            state.actionPoints <= 0 ||
+            completed ||
+            (action.id === "support" && state.round >= 3);
           return (
-            <button className="action-card" type="button" key={action.id} disabled={disabled} onClick={() => dispatch({ type: "PICK_ACTION", actionId: action.id })}>
-              <strong>{action.title}</strong>
-              <span>{action.desc}</span>
+            <button className={`action-card ${completed ? "is-done" : ""}`} type="button" key={action.id} disabled={disabled} onClick={() => dispatch({ type: "PICK_ACTION", actionId: action.id })}>
+              <strong>{action.shortTitle}</strong>
+              <span>{completed ? "已完成" : action.shortDesc}</span>
             </button>
           );
         })}
@@ -515,6 +534,26 @@ export function FloodGame({ onBack, onDecode }: { onBack: () => void; onDecode: 
             <p>{state.eventReport.settlement}</p>
             <button className="primary-btn wide" type="button" onClick={() => dispatch({ type: "CONTINUE_AFTER_EVENT" })}>
               {state.round >= 3 ? floodGameText.showResult : floodGameText.continue}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showGuide && (
+        <div className="toast-backdrop" role="dialog" aria-modal="true">
+          <div className="toast-card flood-guide-card">
+            <p className="kicker">{floodGameText.pageTitle}</p>
+            <h3>{floodGameText.title}</h3>
+            <p>{floodGameText.guide}</p>
+            <button
+              className="primary-btn wide"
+              type="button"
+              onClick={() => {
+                setShowGuide(false);
+                window.scrollTo({ top: 0, behavior: "auto" });
+              }}
+            >
+              {floodGameText.guideButton}
             </button>
           </div>
         </div>
