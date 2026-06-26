@@ -1,0 +1,208 @@
+.flood-game {
+  display: block;
+}
+
+.flood-head {
+  margin-bottom: 16px;
+}
+
+.flood-head h2 {
+  margin-bottom: 10px;
+}
+
+.flood-head p:not(.kicker) {
+  color: #4b4b42;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.flood-dashboard,
+.flood-score-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.flood-metric {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.88);
+}
+
+.flood-metric span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--blue-soft);
+  font-size: 12px;
+}
+
+.flood-metric strong {
+  color: var(--blue);
+  font-size: 17px;
+}
+
+.flood-message {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid rgba(140, 46, 36, 0.18);
+  border-radius: 8px;
+  background: rgba(140, 46, 36, 0.07);
+}
+
+.flood-message strong {
+  color: var(--red);
+}
+
+.flood-message span,
+.flood-message small {
+  color: #4b4b42;
+  line-height: 1.55;
+}
+
+.flood-map {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid rgba(184, 137, 63, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, transparent 49%, rgba(184, 137, 63, 0.08) 50%, transparent 51%) center / 52px 100%,
+    linear-gradient(0deg, transparent 49%, rgba(184, 137, 63, 0.07) 50%, transparent 51%) center / 100% 52px,
+    rgba(255, 247, 232, 0.72);
+}
+
+.area-card {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  min-height: 126px;
+  padding: 12px;
+  border: 1px solid rgba(20, 48, 76, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.88);
+  color: var(--blue);
+  text-align: left;
+}
+
+.area-card strong {
+  font-size: 16px;
+}
+
+.area-card span {
+  justify-self: start;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #fff8ea;
+  font-size: 12px;
+}
+
+.area-card small,
+.area-card em {
+  color: var(--blue-soft);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.area-card i {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  color: var(--red);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.area-card.risk-0 span {
+  background: #476d5a;
+}
+
+.area-card.risk-1 span {
+  background: #b8893f;
+}
+
+.area-card.risk-2 span {
+  background: #2f6f83;
+}
+
+.area-card.risk-3 span {
+  background: #8c2e24;
+}
+
+.area-card.is-locked {
+  border-color: rgba(20, 48, 76, 0.36);
+  background: rgba(232, 223, 205, 0.9);
+}
+
+.area-card.is-selectable {
+  box-shadow: 0 0 0 2px rgba(184, 137, 63, 0.18);
+}
+
+.action-grid {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.action-card {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.9);
+  color: var(--blue);
+  text-align: left;
+}
+
+.action-card strong {
+  font-size: 17px;
+}
+
+.action-card span {
+  color: #4b4b42;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.action-card:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.flood-event-card h3 {
+  margin-bottom: 10px;
+}
+
+.flood-result {
+  display: grid;
+  gap: 12px;
+  padding: 22px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.flood-result p {
+  color: #4b4b42;
+  line-height: 1.7;
+}
+
+.flood-result .flood-score-grid {
+  margin-bottom: 2px;
+}
+
+@media (max-width: 360px) {
+  .flood-dashboard,
+  .flood-score-grid,
+  .flood-map {
+    grid-template-columns: 1fr;
+  }
+}

@@ -420,6 +420,11 @@ h3 {
   margin-bottom: 0;
 }
 
+.flood-test-entry {
+  border-color: rgba(140, 46, 36, 0.28);
+  background: linear-gradient(135deg, rgba(255, 247, 232, 0.94), rgba(184, 137, 63, 0.1));
+}
+
 .comic-stage {
   position: relative;
   overflow: hidden;

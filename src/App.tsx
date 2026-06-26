@@ -1,8 +1,10 @@
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import { gonggongVolume, quiz, riskDecode, theater, uiText, volumes } from "./content";
+import { floodGameText } from "./content/floodGame";
+import { FloodGame } from "./modules/FloodGame";
 
-type Page = "splash" | "overview" | "volume" | "theater" | "decode" | "quiz" | "result";
+type Page = "splash" | "overview" | "volume" | "theater" | "decode" | "quiz" | "result" | "floodGame";
 
 function App() {
   const [page, setPage] = useState<Page>("splash");
@@ -52,6 +54,7 @@ function App() {
       {page === "splash" && <SplashPage onEnter={() => navigate("overview")} />}
       {page === "overview" && <OverviewPage onBack={() => navigate("splash")} onOpen={() => navigate("volume")} onUnavailable={showUnavailable} />}
       {page === "volume" && <VolumePage onBack={() => navigate("overview")} onGo={navigate} />}
+      {page === "floodGame" && <FloodGame onBack={() => navigate("volume")} onDecode={() => navigate("decode")} />}
       {page === "theater" && (
         <TheaterPage
           index={comicIndex}
@@ -207,6 +210,16 @@ function VolumePage({ onBack, onGo }: { onBack: () => void; onGo: (page: Page) =
             </button>
           </article>
         ))}
+        <article className="entry-card flood-test-entry">
+          <div>
+            <p className="kicker">临时测试入口</p>
+            <h3>{floodGameText.testEntryTitle}</h3>
+            <p>{floodGameText.testEntryDesc}</p>
+          </div>
+          <button className="secondary-btn" type="button" onClick={() => onGo("floodGame")}>
+            {floodGameText.testEntryButton}
+          </button>
+        </article>
       </div>
     </section>
   );
